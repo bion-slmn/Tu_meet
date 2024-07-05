@@ -14,10 +14,18 @@ class BaseSerialiser(serializers.ModelSerializer):
         format="%B %d, %Y, %I:%M %p", read_only=True)
     updated_at = serializers.DateTimeField(
         format="%B %d, %Y, %I:%M %p", read_only=True)
+    user = UserSerialiser(read_only=True)
     
 
 class PostSerialiser(BaseSerialiser):
-    user = UserSerialiser(read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)
+    comments_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = Post
-        fields = ['id', 'created_at', 'updated_at', 'user', 'content', 'pics']
+        fields = ['id', 'created_at', 'content',
+                  'pics', 'user', 'likes_count', 'comments_count']
+        
+class CommentSerialiser(BaseSerialiser):
+    class Meta:
+        model = Comment
+        fields = ['id', 'content', 'user']
