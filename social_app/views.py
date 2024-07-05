@@ -104,3 +104,20 @@ class CommentView(APIView):
         comment = get_object_or_404(Comment, id=comment_id)
         comment.delete()
         return Response('Successfully deleted')
+    
+
+
+class ViewComments(ListAPIView):
+    """
+    A view class for listing comments for a specific post.
+    """
+    
+    def get_queryset(self):
+        """
+        Override this method to filter comments by post_id.
+        """
+        post_id = self.kwargs['post_id']
+        return Comment.objects.filter(post_id=post_id)
+
+    serializer_class = CommentSerialiser
+
