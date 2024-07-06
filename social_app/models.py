@@ -17,7 +17,9 @@ class BaseModel(models.Model):
         """
         An options class for defining metadata options for a model.
         """
+        ordering = ['created_at']
         abstract = True
+        
 
 
 class Post(BaseModel):
@@ -27,6 +29,9 @@ class Post(BaseModel):
     content = models.TextField()
     pics = models.ImageField(upload_to='images/', null=True, blank=True)
 
+    def __str__(self) -> str:
+        return self.content[:15]
+
 
 class Comment(BaseModel):
     """
@@ -34,6 +39,9 @@ class Comment(BaseModel):
     """
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
+
+    def __str__(self) -> str:
+        return self.content[:15]
 
 
 class Like(BaseModel):

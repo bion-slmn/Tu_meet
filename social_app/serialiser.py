@@ -24,8 +24,10 @@ class PostSerialiser(BaseSerialiser):
         model = Post
         fields = ['id', 'created_at', 'content',
                   'pics', 'user', 'likes_count', 'comments_count']
+        ordering = ['id']
         
 class CommentSerialiser(BaseSerialiser):
     class Meta:
         model = Comment
         fields = ['id', 'content', 'user']
+

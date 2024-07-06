@@ -17,7 +17,8 @@ class PostView(ListAPIView):
     A view class for listing posts using a specific queryset and serializer.
     """
     queryset = Post.objects.annotate(
-        likes_count=Count('likes'), comments_count=Count('comments')).all()
+        likes_count=Count('likes'), comments_count=Count(
+            'comments')).order_by('created_at').all()
     serializer_class = PostSerialiser
 
 @class_exception_handler
@@ -69,6 +70,22 @@ class PostDetails(APIView):
     
 @class_exception_handler
 class CommentView(APIView):
+
+    def get(self, request: HttpRequest, post_id):
+        """
+        Retrieves comments related to a specific post.
+
+        Args:
+            request: HttpRequest object representing the request.
+            post_id: ID of the post to retrieve comments for.
+
+        Returns:
+            CommentSerialiser: A serialized representation of the 
+            comments related to the specified post.
+        """
+        comments = Comment.objects.filter(post_id=post_id)
+        return Response(CommentSerialiser(comments, many=True).data)
+
     def post(self, request: HttpRequest, post_id: str) -> Response:
         """
         Handles POST requests to create a new comment on a specific post.
@@ -105,19 +122,23 @@ class CommentView(APIView):
         comment.delete()
         return Response('Successfully deleted')
     
+@class_exception_handler
+class LikesView(APIView):
+    def post(self, request: HttpRequest, post_id) ->Response:
+        """
+        Handles liking or unliking a post.
 
+        Args:
+            request: HttpRequest object representing the request.
+            post_id: ID of the post to like or unlike.
 
-class ViewComments(ListAPIView):
-    """
-    A view class for listing comments for a specific post.
-    """
+        Returns:
+            Response: The number of likes the post currently has
+            after the like/unlike operation.
+        """
+        post = get_object_or_404(Post, id=post_id)
+        like, created = Like.objects.get_or_create(post=post, user=request.user)
+        if not created:
+            like.delete()
+        return Response(post.likes.count())
     
-    def get_queryset(self):
-        """
-        Override this method to filter comments by post_id.
-        """
-        post_id = self.kwargs['post_id']
-        return Comment.objects.filter(post_id=post_id)
-
-    serializer_class = CommentSerialiser
-
