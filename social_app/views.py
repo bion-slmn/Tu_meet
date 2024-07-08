@@ -99,11 +99,11 @@ class CommentView(APIView):
         """ 
 
         post = get_object_or_404(Post, id=post_id)
-
+        user = get_object_or_404(User, id=1)
 
         serialiser = CommentSerialiser(data={'content':request.data.get('content')})
         if serialiser.is_valid():
-            serialiser.save(post=post, user=request.user)
+            serialiser.save(post=post, user=user)
             return Response(serialiser.data, status=status.HTTP_201_CREATED)
         return Response(serialiser.errors, status=status.HTTP_400_BAD_REQUEST)
         

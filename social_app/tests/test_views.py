@@ -209,3 +209,142 @@ class CreatePostTestCase(APITestCase):
        
 
 
+class ViewCommentsTest(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user_john = User.objects.create_user(username='john', password='12345')
+        self.user_bion = User.objects.create_user(username='bion', password='67890')
+        self.post = Post.objects.create(content="Test content", user=self.user_bion)
+        
+        self.comment_1 = Comment.objects.create(
+            content="my first post", user=self.user_john, post=self.post)
+        self.comment_2 = Comment.objects.create(
+            content="then this is my first comment", user=self.user_bion,  post=self.post)
+
+        # Assuming you have a Post model and a way to associate comments with posts
+        
+
+    def test_view_comments(self):
+        # Define the URL for the endpoint
+        url = f'/api/view-comments/{self.post.id}/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        comments_data = response.json()
+        self.assertEqual(len(comments_data), 2)
+        self.assertIn('id', comments_data[0])
+        self.assertIn('content', comments_data[0])
+        self.assertIn('user', comments_data[0])
+        self.assertIn('username', comments_data[0]['user'])
+        self.assertEqual(comments_data[0]['user']['username'], self.user_john.username)
+        self.assertEqual(comments_data[0]['user']['id'], self.user_john.id)
+
+        self.assertIn('id', comments_data[1])
+        self.assertIn('content', comments_data[1])
+        self.assertIn('user', comments_data[1])
+        self.assertIn('username', comments_data[1]['user'])
+        self.assertEqual(comments_data[1]['user']['username'], self.user_bion.username)
+        self.assertEqual(comments_data[1]['user']['id'], self.user_bion.id)
+
+    def test_with_wrong_id(self):
+        false_id = 'd0fd92cd-65ba-41c8-ba4a-fa6d0dc07368'
+        url = f'/api/view-comments/{false_id}/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, [])
+
+    def test_with_no_uuid_id(self):
+        false_id = 'string_id'
+        url = f'/api/view-comments/{false_id}/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 400)
+
+
+
+class CreateCommentTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='john', password='password123')
+        self.client.login(username='john', password='password123')
+        self.post = Post.objects.create(user=self.user, content='Test post')
+        self.url = reverse('create_comment', args=[self.post.id])  
+
+    def test_create_comment(self):
+        data = {
+            'content': 'new comment'
+        }
+
+        response = self.client.post(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['content'], data['content'])
+        self.assertEqual(response.data['user']['username'], self.user.username)
+        self.assertEqual(response.data['user']['id'], self.user.id)
+        self.assertIn('id', response.data)
+
+    def test_create_comment_invalid_data(self):
+        data = {}
+
+        response = self.client.post(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_comment_missing_post_id(self):
+        # Test scenario where the post ID doesn't exist
+        invalid_url = reverse('create_comment', args=['invalid-post-id'])
+
+        data = {
+            'content': 'new comment'
+        }
+
+        response = self.client.post(invalid_url, data, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+
+
+class LikesViewTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='john', password='password123')
+        self.client.login(username='john', password='password123')
+        self.post = Post.objects.create(user=self.user, content='Test post')
+        self.url = reverse('toggele-like', args=[self.post.id])  # Assuming the URL name is 'like-post'
+
+    def test_like_post(self):
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, self.post.likes.count())
+
+    def test_unlike_post(self):
+        # Like the post first
+        like = Like.objects.create(post=self.post, user=self.user)
+
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, self.post.likes.count())
+
+    def test_unlike_when_no_like(self):
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, self.post.likes.count())
+
+
+    def test_wrong_string_id(self):
+        self.url = reverse('toggele-like', args=['wrong id'])
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 400)
+
+    def test_wrong_nonexisting_id(self):
+        self.url = reverse('toggele-like', args=['9f7f4e93-535c-4859-8d88-fa388ab3db4a'])
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 404)
+
+    
+
