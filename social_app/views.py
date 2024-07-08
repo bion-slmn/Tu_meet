@@ -12,6 +12,7 @@ from django.db.models import Count
 from django.contrib.auth.models import User
 
 
+
 class PostView(ListAPIView):
     """
     A view class for listing posts using a specific queryset and serializer.
@@ -56,12 +57,11 @@ class PostDetails(APIView):
         Returns:
             Response: The serialized data of the newly created post.
         """ 
-
         data = {
         'content': request.data.get('content'),
-        'pics': request.data.get('pics')
+        'pics': request.FILES.get('pics')
         }
-
+        
         serializer = PostSerialiser(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
@@ -99,6 +99,7 @@ class CommentView(APIView):
         """ 
 
         post = get_object_or_404(Post, id=post_id)
+
 
         serialiser = CommentSerialiser(data={'content':request.data.get('content')})
         if serialiser.is_valid():

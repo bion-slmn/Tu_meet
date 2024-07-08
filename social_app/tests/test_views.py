@@ -5,6 +5,19 @@ from social_app.models import Post, Like, Comment
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
+import os
+from PIL import Image
+import tempfile
+from django.test import TestCase
+from django.test import override_settings
+
+
+def get_temporary_image():
+    image = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    image.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
 
 class PostViewTest(TestCase):
     def setUp(self):
@@ -31,7 +44,6 @@ class PostViewTest(TestCase):
         self.assertIsInstance(data['results'], list)
 
     def test_post_content(self):
-
         self.assertEqual(self.response.status_code, 200)
         data = self.response.json()
         results = data['results']
@@ -137,4 +149,63 @@ class PostDetailsTestCase(APITestCase):
         self.assertEqual(response.data['user']['username'], 'testuser')
         self.assertIsNotNone(response.data['user']['id'])
 
+
+
+class CreatePostTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='john', password='password123')
+        self.client.login(username='john', password='password123')
+        self.url = reverse('create_post')  # Update this with the correct URL name
+
+    def test_create_post(self):
+        data = {
+            'content': 'new post'
+        }
+
+        response = self.client.post(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['content'], data['content'])
+        self.assertIsNotNone(response.data['id'])
+        self.assertIsNotNone(response.data['created_at'])
+        self.assertIsNone(response.data['pics'])
+        self.assertEqual(response.data['user']['username'], self.user.username)
+        self.assertEqual(response.data['user']['id'], self.user.id)
+
     
+        self.assertEqual(Post.objects.count(), 1)
+        self.assertEqual(Post.objects.get().content, data['content'])
+
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    def test_create_post_with_image(self):
+        
+        data = {
+                'content': 'new post',
+                'pics': get_temporary_image()
+            }
+
+        response = self.client.post(self.url, data, format="multipart")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['content'], data['content'])
+        self.assertIsNotNone(response.data['id'])
+        self.assertIsNotNone(response.data['created_at'])
+        self.assertIsNotNone(response.data['pics'])
+        self.assertEqual(response.data['user']['username'], self.user.username)
+        self.assertEqual(response.data['user']['id'], self.user.id)
+
+    def test_failure(self):
+        response = self.client.post(self.url, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_post_with_no_content(self):
+        
+        data = {
+                'pics': get_temporary_image()
+            }
+
+        response = self.client.post(self.url, data, format="multipart")
+        self.assertEqual(response.status_code, 400)
+       
+
+
