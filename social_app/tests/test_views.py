@@ -286,7 +286,7 @@ class CreateCommentTestCase(APITestCase):
         self.assertIn('id', response.data)
 
     def test_create_comment_invalid_data(self):
-        data = {}
+        data = {None}
 
         response = self.client.post(self.url, data, format='json')
 
