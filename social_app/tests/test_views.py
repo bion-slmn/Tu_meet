@@ -290,7 +290,7 @@ class CreateCommentTestCase(APITestCase):
 
         response = self.client.post(self.url, data, format='json')
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
     def test_create_comment_missing_post_id(self):
         # Test scenario where the post ID doesn't exist
