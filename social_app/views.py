@@ -12,7 +12,6 @@ from django.db.models import Count
 from django.contrib.auth.models import User
 
 
-
 class PostView(ListAPIView):
     """
     A view class for listing posts using a specific queryset and serializer.
@@ -22,11 +21,12 @@ class PostView(ListAPIView):
             'comments')).order_by('created_at').all()
     serializer_class = PostSerialiser
 
+
 @class_exception_handler
 class PostDetails(APIView):
     def get(self, request: HttpRequest, post_id: str) -> Response:
         """
-        Handles GET requests to retrieve a specific post by 
+        Handles GET requests to retrieve a specific post by
         its ID and return its serialized data.
 
 
@@ -36,38 +36,40 @@ class PostDetails(APIView):
 
         Returns:
             Response: The serialized data of the retrieved post.
-        """ 
+        """
 
         post = get_object_or_404(
             Post.objects.annotate(
-                likes_count=Count('likes'), 
-                comments_count=Count('comments')),id=post_id)
-        
+                likes_count=Count('likes'),
+                comments_count=Count('comments')), id=post_id)
+
         post_serialised = PostSerialiser(post).data
         return Response(post_serialised)
-    
+
     def post(self, request: HttpRequest):
         """
         Handles POST requests to create a new post
           with user, content, and optional images.
 
         Args:
-            request: The HTTP request object containing user, content, and pics data.
+            request: The HTTP request object containing user, 
+            content, and pics data.
 
         Returns:
             Response: The serialized data of the newly created post.
-        """ 
+        """
         data = {
-        'content': request.data.get('content'),
-        'pics': request.FILES.get('pics')
+            'content': request.data.get('content'),
+            'pics': request.FILES.get('pics')
         }
-        
+
         serializer = PostSerialiser(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 @class_exception_handler
 class CommentView(APIView):
 
@@ -80,7 +82,7 @@ class CommentView(APIView):
             post_id: ID of the post to retrieve comments for.
 
         Returns:
-            CommentSerialiser: A serialized representation of the 
+            CommentSerialiser: A serialized representation of the
             comments related to the specified post.
         """
         comments = Comment.objects.filter(post_id=post_id)
@@ -95,17 +97,19 @@ class CommentView(APIView):
             post_id: The ID of the post to comment on.
 
         Returns:
-            Response: The serialized data of the newly created comment or error response.
-        """ 
+            Response: The serialized data of the newly 
+            created comment or error response.
+        """
 
         post = get_object_or_404(Post, id=post_id)
 
-        serialiser = CommentSerialiser(data={'content':request.data.get('content')})
+        serialiser = CommentSerialiser(
+            data={'content': request.data.get('content')})
         if serialiser.is_valid():
             serialiser.save(post=post, user=request.user)
             return Response(serialiser.data, status=status.HTTP_201_CREATED)
         return Response(serialiser.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     def delete(self, request: HttpRequest, comment_id: str) -> Response:
         """
         Handles DELETE requests to delete a specific comment by its ID.
@@ -116,15 +120,16 @@ class CommentView(APIView):
 
         Returns:
             Response: A success message indicating the comment was deleted.
-        """ 
+        """
 
         comment = get_object_or_404(Comment, id=comment_id)
         comment.delete()
         return Response('Successfully deleted')
-    
+
+
 @class_exception_handler
 class LikesView(APIView):
-    def post(self, request: HttpRequest, post_id) ->Response:
+    def post(self, request: HttpRequest, post_id) -> Response:
         """
         Handles liking or unliking a post.
 
@@ -137,16 +142,18 @@ class LikesView(APIView):
             after the like/unlike operation.
         """
         post = get_object_or_404(Post, id=post_id)
-        like, created = Like.objects.get_or_create(post=post, user=request.user)
+        like, created = Like.objects.get_or_create(
+            post=post, user=request.user)
         if not created:
             like.delete()
         return Response(post.likes.count())
-    
+
+
 @class_exception_handler
 class ProfileView(APIView):
-    def get(self, request: HttpRequest, user_id: str) ->Response:
+    def get(self, request: HttpRequest, user_id: str) -> Response:
         """
-        Retrieves user information including username, 
+        Retrieves user information including username,
         email, profile picture, and bio.
 
         Args:
@@ -154,20 +161,21 @@ class ProfileView(APIView):
             user_id: The ID of the user to retrieve information for.
 
         Returns:
-            Response: A response containing the user's 
+            Response: A response containing the user's
             username, email, profile picture, and bio.
         """
-
-        user = get_object_or_404(User.objects.select_related('profile'), id=user_id)
+        user = get_object_or_404(
+            User.objects.select_related('profile'), id=user_id)
+        profile_pic = user.profile.profile_pic.url
         return Response(
             {'user_name': user.username,
-            'email': user.email,
-            'profile_pice': user.profile.profile_pic.url if user.profile.profile_pic else None,
-            'bio': user.profile.bio
-            }
+             'email': user.email,
+             'profile_pice': profile_pic if user.profile.profile_pic else None,
+             'bio': user.profile.bio
+             }
         )
-    
-    def put(self, request: HttpRequest, user_id: str) ->Response:
+
+    def put(self, request: HttpRequest, user_id: str) -> Response:
         """
         Updates the bio and profile picture of a user's profile.
 
@@ -176,26 +184,27 @@ class ProfileView(APIView):
             user_id: The ID of the user whose profile is being updated.
 
         Returns:
-            Response: A response containing the updated user 
+            Response: A response containing the updated user
             information including username, email, profile picture, and bio.
         """
 
-        user = get_object_or_404(User.objects.select_related('profile'), id=user_id)
+        user = get_object_or_404(
+            User.objects.select_related('profile'), id=user_id)
         profile = user.profile
         profile.bio = request.data.get('bio', profile.bio)
-        profile.profile_pic = request.FILES.get('profile_pic', profile.profile_pic)
+        profile.profile_pic = request.FILES.get(
+            'profile_pic', profile.profile_pic)
         user.username = request.data.get('username', user.username)
         user.email = request.data.get('email', user.email)
         profile.save()
         user.save()
 
+        profile_pic = profile.profile_pic.url
+
         return Response(
             {
                 'user_name': user.username,
                 'email': user.email,
-                'profile_pic': profile.profile_pic.url if profile.profile_pic else None,
-                'bio': profile.bio
-            },
-            status=status.HTTP_200_OK
-        )
-
+                'profile_pic': profile_pic if profile.profile_pic else None,
+                'bio': profile.bio},
+            status=status.HTTP_200_OK)

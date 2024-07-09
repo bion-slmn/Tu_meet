@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import Http404
 
+
 def handle_exceptions(view_func: callable) -> callable:
     """
     Handles exceptions that may occur in the decorated
@@ -37,7 +38,7 @@ def handle_exceptions(view_func: callable) -> callable:
 
 def class_exception_handler(cls):
     """
-    A decorator that wraps all methods of a class with an 
+    A decorator that wraps all methods of a class with an
     exception handling mechanism.
 
     Args:
@@ -45,7 +46,7 @@ def class_exception_handler(cls):
 
     Returns:
         The decorated class with exception handling for all its methods.
-    """ 
+    """
 
     for name, values in vars(cls).items():
         if callable(values):

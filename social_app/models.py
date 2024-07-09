@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 class BaseModel(models.Model):
     """
     A base model representing common fields for all models.
-    """ 
+    """
     id = models.UUIDField(
         default=uuid.uuid4, editable=False, primary_key=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -19,7 +19,6 @@ class BaseModel(models.Model):
         """
         ordering = ['created_at']
         abstract = True
-        
 
 
 class Post(BaseModel):
@@ -37,7 +36,10 @@ class Comment(BaseModel):
     """
     A model representing a comment with text content.
     """
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments')
     content = models.TextField()
 
     def __str__(self) -> str:
@@ -48,11 +50,23 @@ class Like(BaseModel):
     """
     A model representing a like on a post.
     """
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='likes')
+
 
 class Profile(models.Model):
+    """
+    Represents a user profile with a one-to-one relationship to a User.
+
+    Returns:
+        str: The username of the associated User.
+    """
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    profile_pic = models.ImageField(
+        upload_to='profile_pics/', null=True, blank=True)
     bio = models.TextField(null=True)
 
     def __str__(self):
