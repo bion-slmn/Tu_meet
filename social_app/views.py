@@ -142,3 +142,60 @@ class LikesView(APIView):
             like.delete()
         return Response(post.likes.count())
     
+@class_exception_handler
+class ProfileView(APIView):
+    def get(self, request: HttpRequest, user_id: str) ->Response:
+        """
+        Retrieves user information including username, 
+        email, profile picture, and bio.
+
+        Args:
+            request: The HTTP request object.
+            user_id: The ID of the user to retrieve information for.
+
+        Returns:
+            Response: A response containing the user's 
+            username, email, profile picture, and bio.
+        """
+
+        user = get_object_or_404(User.objects.select_related('profile'), id=user_id)
+        return Response(
+            {'user_name': user.username,
+            'email': user.email,
+            'profile_pice': user.profile.profile_pic.url if user.profile.profile_pic else None,
+            'bio': user.profile.bio
+            }
+        )
+    
+    def put(self, request: HttpRequest, user_id: str) ->Response:
+        """
+        Updates the bio and profile picture of a user's profile.
+
+        Args:
+            request: The HTTP request object.
+            user_id: The ID of the user whose profile is being updated.
+
+        Returns:
+            Response: A response containing the updated user 
+            information including username, email, profile picture, and bio.
+        """
+
+        user = get_object_or_404(User.objects.select_related('profile'), id=user_id)
+        profile = user.profile
+        profile.bio = request.data.get('bio', profile.bio)
+        profile.profile_pic = request.FILES.get('profile_pic', profile.profile_pic)
+        user.username = request.data.get('username', user.username)
+        user.email = request.data.get('email', user.email)
+        profile.save()
+        user.save()
+
+        return Response(
+            {
+                'user_name': user.username,
+                'email': user.email,
+                'profile_pic': profile.profile_pic.url if profile.profile_pic else None,
+                'bio': profile.bio
+            },
+            status=status.HTTP_200_OK
+        )
+

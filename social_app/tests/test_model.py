@@ -8,16 +8,20 @@ import uuid
 from django.db.utils import IntegrityError
 from .test_views import get_temporary_image
 
+
 class BaseModelTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.post = Post.objects.create(content="Sample post content", user=self.user)
+        self.user = User.objects.create_user(
+            username='testuser', password='12345')
+        self.post = Post.objects.create(
+            content="Sample post content", user=self.user)
 
     def test_base_model_fields(self):
         """
         Test that Base model fields are correctly set.
         """
-        post1 = Post.objects.create(content="Sample post content", user=self.user)
+        post1 = Post.objects.create(
+            content="Sample post content", user=self.user)
         self.assertNotEqual(self.post.id, post1.id)
         self.assertGreater(self.post.updated_at, self.post.created_at)
         self.assertEqual(self.post.user, self.user)
@@ -32,8 +36,12 @@ class BaseModelTest(TestCase):
         """
         Test that the image field can accept an image file.
         """
-        image_file = SimpleUploadedFile("sample.jpg", b"file_content", content_type="image/jpeg")
-        post_with_image = Post.objects.create(content="Image post", user=self.user, pics=image_file)
+        image_file = SimpleUploadedFile(
+            "sample.jpg",
+            b"file_content",
+            content_type="image/jpeg")
+        post_with_image = Post.objects.create(
+            content="Image post", user=self.user, pics=image_file)
         self.assertIsNotNone(post_with_image.pics.name)
 
     def test_post_validation(self):
@@ -47,13 +55,14 @@ class BaseModelTest(TestCase):
             Post.objects.create(content="Valid content", user=None)
 
 
-
-
 class CommentModelTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.post = Post.objects.create(content="Sample post content", user=self.user)
-        self.comment = Comment.objects.create(content="Great post!", post=self.post, user=self.user)
+        self.user = User.objects.create_user(
+            username='testuser', password='12345')
+        self.post = Post.objects.create(
+            content="Sample post content", user=self.user)
+        self.comment = Comment.objects.create(
+            content="Great post!", post=self.post, user=self.user)
 
     def test_comment_fields(self):
         """
@@ -78,15 +87,18 @@ class CommentModelTest(TestCase):
 
     def test_post_content_field(self):
         """
-        Test that the post's content field is correctly set through the comment.
+        Test that the post's content field is
+        correctly set through the comment.
         """
         self.assertEqual(self.post.content, "Sample post content")
 
 
 class LikeModelTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.post = Post.objects.create(content="Sample post content", user=self.user)
+        self.user = User.objects.create_user(
+            username='testuser', password='12345')
+        self.post = Post.objects.create(
+            content="Sample post content", user=self.user)
         self.like = Like.objects.create(post=self.post, user=self.user)
 
     def test_like_fields(self):
@@ -119,17 +131,17 @@ class LikeModelTest(TestCase):
 class ProfileModelTest(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.user = User.objects.create_user(
+            username='testuser', password='12345')
 
     def test_profile_creation(self):
         # test the profile created by the signals
         self.assertIsNotNone(self.user.profile)
         self.assertIsInstance(self.user.profile, Profile)
-        
 
     def test_profile_pic_default(self):
         self.assertEqual(str(self.user.profile.profile_pic), '')
-    
+
     def test_profile_takes_only_one_profie(self):
         with self.assertRaises(IntegrityError):
             Profile.objects.create(user=self.user)
@@ -143,8 +155,8 @@ class ProfileModelTest(TestCase):
     def test_profile_with_pic_and_bio(self):
         profile_pic_path = get_temporary_image()
         bio_text = 'This is a test bio.'
-        self.user.profile.profile_pic=profile_pic_path 
-        self.user.profile.bio=bio_text
+        self.user.profile.profile_pic = profile_pic_path
+        self.user.profile.bio = bio_text
         self.user.save()
 
         self.assertEqual(self.user.profile.profile_pic, profile_pic_path)

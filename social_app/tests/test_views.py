@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
-from social_app.models import Post, Like, Comment
+from social_app.models import Post, Like, Comment, Profile
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
@@ -19,22 +19,32 @@ def get_temporary_image():
     tmp_file.seek(0)
     return tmp_file
 
+
 class PostViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        image_file = SimpleUploadedFile("sample.jpg", b"file_content", content_type="image/jpeg")
-        self.post1 = Post.objects.create(content="Sample post content", user=self.user)
-        self.post2 = Post.objects.create(content="Another sample post", user=self.user, pics=image_file)
+        self.user = User.objects.create_user(
+            username='testuser', password='12345')
+        image_file = SimpleUploadedFile(
+            "sample.jpg",
+            b"file_content",
+            content_type="image/jpeg")
+        self.post1 = Post.objects.create(
+            content="Sample post content", user=self.user)
+        self.post2 = Post.objects.create(
+            content="Another sample post",
+            user=self.user,
+            pics=image_file)
         self.like = Like.objects.create(post=self.post1, user=self.user)
-        self.comment = Comment.objects.create(content="Great post!", post=self.post1, user=self.user)
+        self.comment = Comment.objects.create(
+            content="Great post!", post=self.post1, user=self.user)
         self.response = self.client.get(reverse('all_posts'))
-        
+
     def test_status_code(self):
         self.assertEqual(self.response.status_code, 200)
 
     def test_response_structure(self):
-        
+
         self.assertEqual(self.response.status_code, 200)
         data = self.response.json()
         self.assertIn('count', data)
@@ -79,7 +89,7 @@ class PostViewTest(TestCase):
         self.assertIsNotNone(results[1]['created_at'])
 
     def test_post_user(self):
-       
+
         self.assertEqual(self.response.status_code, 200)
         data = self.response.json()
         results = data['results']
@@ -106,24 +116,24 @@ class PostViewTest(TestCase):
         self.assertEqual(results[1]['comments_count'], 0)
 
 
-
 class PostDetailsTestCase(APITestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.user = User.objects.create_user(
+            username='testuser', password='testpass')
         self.post = Post.objects.create(content="Test content", user=self.user)
         self.url = reverse('view_a_post', kwargs={'post_id': self.post.id})
         self.client.login(username='testuser', password='testpass')
-    
+
     def tearDown(self):
         # Clean up after each test
         self.post.delete()
         self.user.delete()
 
     def test_get_post_details(self):
-        
+
         response = self.client.get(self.url)
-        
+
         self.assertEqual(response.status_code, 200)
         self.assertIn('id', response.data)
         self.assertIn('created_at', response.data)
@@ -138,7 +148,6 @@ class PostDetailsTestCase(APITestCase):
         self.assertEqual(response.data['content'], "Test content")
         self.assertIsNone(response.data['pics'])
 
-
     def test_likes_comment_count(self):
         response = self.client.get(self.url)
         self.assertEqual(response.data['likes_count'], 0)
@@ -150,13 +159,14 @@ class PostDetailsTestCase(APITestCase):
         self.assertIsNotNone(response.data['user']['id'])
 
 
-
 class CreatePostTestCase(APITestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='john', password='password123')
+        self.user = User.objects.create_user(
+            username='john', password='password123')
         self.client.login(username='john', password='password123')
-        self.url = reverse('create_post')  # Update this with the correct URL name
+        # Update this with the correct URL name
+        self.url = reverse('create_post')
 
     def test_create_post(self):
         data = {
@@ -173,17 +183,16 @@ class CreatePostTestCase(APITestCase):
         self.assertEqual(response.data['user']['username'], self.user.username)
         self.assertEqual(response.data['user']['id'], self.user.id)
 
-    
         self.assertEqual(Post.objects.count(), 1)
         self.assertEqual(Post.objects.get().content, data['content'])
 
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_create_post_with_image(self):
-        
+
         data = {
-                'content': 'new post',
-                'pics': get_temporary_image()
-            }
+            'content': 'new post',
+            'pics': get_temporary_image()
+        }
 
         response = self.client.post(self.url, data, format="multipart")
         self.assertEqual(response.status_code, 201)
@@ -199,31 +208,34 @@ class CreatePostTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_create_post_with_no_content(self):
-        
+
         data = {
-                'pics': get_temporary_image()
-            }
+            'pics': get_temporary_image()
+        }
 
         response = self.client.post(self.url, data, format="multipart")
         self.assertEqual(response.status_code, 400)
-       
 
 
 class ViewCommentsTest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user_john = User.objects.create_user(username='john', password='12345')
-        self.user_bion = User.objects.create_user(username='bion', password='67890')
-        self.post = Post.objects.create(content="Test content", user=self.user_bion)
-        
+        self.user_john = User.objects.create_user(
+            username='john', password='12345')
+        self.user_bion = User.objects.create_user(
+            username='bion', password='67890')
+        self.post = Post.objects.create(
+            content="Test content", user=self.user_bion)
+
         self.comment_1 = Comment.objects.create(
             content="my first post", user=self.user_john, post=self.post)
         self.comment_2 = Comment.objects.create(
-            content="then this is my first comment", user=self.user_bion,  post=self.post)
+            content="then this is my first comment",
+            user=self.user_bion,
+            post=self.post)
 
-        # Assuming you have a Post model and a way to associate comments with posts
-        
+
 
     def test_view_comments(self):
         # Define the URL for the endpoint
@@ -237,14 +249,18 @@ class ViewCommentsTest(TestCase):
         self.assertIn('content', comments_data[0])
         self.assertIn('user', comments_data[0])
         self.assertIn('username', comments_data[0]['user'])
-        self.assertEqual(comments_data[0]['user']['username'], self.user_john.username)
+        self.assertEqual(
+            comments_data[0]['user']['username'],
+            self.user_john.username)
         self.assertEqual(comments_data[0]['user']['id'], self.user_john.id)
 
         self.assertIn('id', comments_data[1])
         self.assertIn('content', comments_data[1])
         self.assertIn('user', comments_data[1])
         self.assertIn('username', comments_data[1]['user'])
-        self.assertEqual(comments_data[1]['user']['username'], self.user_bion.username)
+        self.assertEqual(
+            comments_data[1]['user']['username'],
+            self.user_bion.username)
         self.assertEqual(comments_data[1]['user']['id'], self.user_bion.id)
 
     def test_with_wrong_id(self):
@@ -263,14 +279,14 @@ class ViewCommentsTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
 
-
 class CreateCommentTestCase(APITestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='john', password='password123')
+        self.user = User.objects.create_user(
+            username='john', password='password123')
         self.client.login(username='john', password='password123')
         self.post = Post.objects.create(user=self.user, content='Test post')
-        self.url = reverse('create_comment', args=[self.post.id])  
+        self.url = reverse('create_comment', args=[self.post.id])
 
     def test_create_comment(self):
         data = {
@@ -305,14 +321,15 @@ class CreateCommentTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
 
-
 class LikesViewTestCase(APITestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='john', password='password123')
+        self.user = User.objects.create_user(
+            username='john', password='password123')
         self.client.login(username='john', password='password123')
         self.post = Post.objects.create(user=self.user, content='Test post')
-        self.url = reverse('toggele-like', args=[self.post.id])  # Assuming the URL name is 'like-post'
+        # Assuming the URL name is 'like-post'
+        self.url = reverse('toggele-like', args=[self.post.id])
 
     def test_like_post(self):
         response = self.client.post(self.url)
@@ -335,16 +352,90 @@ class LikesViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, self.post.likes.count())
 
-
     def test_wrong_string_id(self):
         self.url = reverse('toggele-like', args=['wrong id'])
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 400)
 
     def test_wrong_nonexisting_id(self):
-        self.url = reverse('toggele-like', args=['9f7f4e93-535c-4859-8d88-fa388ab3db4a'])
+        self.url = reverse(
+            'toggele-like',
+            args=['9f7f4e93-535c-4859-8d88-fa388ab3db4a'])
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 404)
 
-    
 
+class ProfileViewTest(APITestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='john2', password='12345', email='bion25@gmail.com')
+        self.url = reverse('view_profile', kwargs={'user_id': self.user.id})
+
+    def test_get_profile(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['user_name'], 'john2')
+        self.assertEqual(response.data['email'], 'bion25@gmail.com')
+        self.assertIsNone(response.data['profile_pice'])
+        self.assertIsNone(response.data['bio'])
+
+    def test_with_wrong_id(self):
+        self.url = reverse('view_profile', kwargs={'user_id': 4})
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 404)
+
+
+class ProfileViewTestUpdates(APITestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='12345',
+            email='testuser@example.com')
+        self.url = reverse('edit_profile', kwargs={'user_id': self.user.id})
+
+    def test_put_update_bio(self):
+        updated_data = {'bio': 'Updated bio'}
+        response = self.client.put(self.url, updated_data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['bio'], updated_data['bio'])
+        self.assertEqual(response.data['user_name'], self.user.username)
+        self.assertEqual(response.data['email'], self.user.email)
+        self.assertIsNone(response.data['profile_pic'])
+
+    def test_put_update_profile_pic(self):
+        updated_data = {'profile_pic': get_temporary_image()}
+        response = self.client.put(self.url, updated_data, format='multipart')
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.data['profile_pic'])
+        self.assertTrue(response.data['profile_pic'].endswith('jpg'))
+        self.assertEqual(response.data['user_name'], self.user.username)
+        self.assertEqual(response.data['email'], self.user.email)
+        self.assertEqual(response.data['bio'], None)
+
+    def test_put_update_username_email(self):
+        updated_data = {
+            'username': 'updateduser',
+            'email': 'updateduser@example.com'}
+        response = self.client.put(self.url, updated_data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['user_name'], updated_data['username'])
+        self.assertEqual(response.data['email'], updated_data['email'])
+        self.assertIsNone(response.data['profile_pic'])
+        self.assertEqual(response.data['bio'], None)
+
+    def test_with_wrong_password(self):
+        self.url = reverse('edit_profile', kwargs={'user_id': 44})
+        updated_data = {
+            'username': 'updateduser',
+            'email': 'updateduser@example.com'}
+        response = self.client.put(self.url, updated_data, format='json')
+        self.assertEqual(response.status_code, 404)
+
+    def test_with_no_data_passed(self):
+        updated_data = {}
+        response = self.client.put(self.url, updated_data, format='json')
+        self.assertEqual(response.status_code, 200)

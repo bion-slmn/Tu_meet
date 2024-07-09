@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from social_app.models import Profile
 from django.db.utils import IntegrityError
 
+
 class ProfileSignalTest(TestCase):
     def test_profile_created(self):
         user = User.objects.create_user(username='testuser', password='12345')
@@ -18,5 +19,3 @@ class ProfileSignalTest(TestCase):
         self.assertEqual(user.profile.bio, None)
         self.assertEqual(user.profile.profile_pic, None)
         self.assertEqual(user.profile.user, user)
-
-
