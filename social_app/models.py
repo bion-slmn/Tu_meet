@@ -49,3 +49,11 @@ class Like(BaseModel):
     A model representing a like on a post.
     """
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    bio = models.TextField(null=True)
+
+    def __str__(self):
+        return self.user.username

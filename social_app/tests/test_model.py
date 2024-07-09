@@ -1,10 +1,12 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from social_app.models import Post, Comment, Like
+from social_app.models import Post, Comment, Like, Profile
 from django.db.utils import IntegrityError
 from django.db.transaction import TransactionManagementError
 import uuid
+from django.db.utils import IntegrityError
+from .test_views import get_temporary_image
 
 class BaseModelTest(TestCase):
     def setUp(self):
@@ -112,3 +114,38 @@ class LikeModelTest(TestCase):
         Test that the post's content field is correctly set through the like.
         """
         self.assertEqual(self.post.content, "Sample post content")
+
+
+class ProfileModelTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='12345')
+
+    def test_profile_creation(self):
+        # test the profile created by the signals
+        self.assertIsNotNone(self.user.profile)
+        self.assertIsInstance(self.user.profile, Profile)
+        
+
+    def test_profile_pic_default(self):
+        self.assertEqual(str(self.user.profile.profile_pic), '')
+    
+    def test_profile_takes_only_one_profie(self):
+        with self.assertRaises(IntegrityError):
+            Profile.objects.create(user=self.user)
+
+    def test_bio_default(self):
+        self.assertIsNone(self.user.profile.bio)
+
+    def test_str_method(self):
+        self.assertEqual(str(self.user.profile), 'testuser')
+
+    def test_profile_with_pic_and_bio(self):
+        profile_pic_path = get_temporary_image()
+        bio_text = 'This is a test bio.'
+        self.user.profile.profile_pic=profile_pic_path 
+        self.user.profile.bio=bio_text
+        self.user.save()
+
+        self.assertEqual(self.user.profile.profile_pic, profile_pic_path)
+        self.assertEqual(self.user.profile.bio, bio_text)
