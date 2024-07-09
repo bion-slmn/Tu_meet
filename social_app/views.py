@@ -52,8 +52,7 @@ class PostDetails(APIView):
           with user, content, and optional images.
 
         Args:
-            request: The HTTP request object containing user, 
-            content, and pics data.
+            request: The HTTP request object containing user, content, and pics data.
 
         Returns:
             Response: The serialized data of the newly created post.
@@ -97,8 +96,7 @@ class CommentView(APIView):
             post_id: The ID of the post to comment on.
 
         Returns:
-            Response: The serialized data of the newly 
-            created comment or error response.
+            Response: The serialized data of the newly created comment or error response.
         """
 
         post = get_object_or_404(Post, id=post_id)
@@ -164,13 +162,15 @@ class ProfileView(APIView):
             Response: A response containing the user's
             username, email, profile picture, and bio.
         """
+
         user = get_object_or_404(
             User.objects.select_related('profile'), id=user_id)
-        profile_pic = user.profile.profile_pic.url
         return Response(
             {'user_name': user.username,
              'email': user.email,
-             'profile_pice': profile_pic if user.profile.profile_pic else None,
+             'profile_pice': (
+                 user.profile.profile_pic.url if
+                 user.profile.profile_pic else None),
              'bio': user.profile.bio
              }
         )
@@ -199,12 +199,13 @@ class ProfileView(APIView):
         profile.save()
         user.save()
 
-        profile_pic = profile.profile_pic.url
-
         return Response(
             {
                 'user_name': user.username,
                 'email': user.email,
-                'profile_pic': profile_pic if profile.profile_pic else None,
-                'bio': profile.bio},
-            status=status.HTTP_200_OK)
+                'profile_pic': (
+                    profile.profile_pic.url if profile.profile_pic else None),
+                'bio': profile.bio
+            },
+            status=status.HTTP_200_OK
+        )
