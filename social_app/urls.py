@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     PostView, PostDetails,
     CommentView, LikesView,
-    ProfileView
+    ProfileView, GoogleLoginApi, GoogleLoginRedirectApi
 )
 
 
@@ -45,4 +45,7 @@ urlpatterns = [
         LikesView.as_view(),
         name='toggele-like'),
 
+    # loging with google
+    path('google-oauth2/login/raw/callback/', GoogleLoginApi.as_view(), name='google_auth2'),
+    path('google-oauth2/login-raw/redirect/', GoogleLoginRedirectApi.as_view(), name='google-oauth2-login-raw-redirect'),
 ]

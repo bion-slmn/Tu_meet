@@ -3,3 +3,11 @@ django-rq==2.10.2
 djangorestframework==3.14.0
 psycopg2-binary==2.9.9
 pillow==9.5.0
+daphne==4.1.2
+djangorestframework-simplejwt==5.3.1
+attrs==23.2.0
+requests==2.22.0
+requests-unixsocket==0.2.0
+typing-extensions==4.9.0
+urllib3==1.25.8
+oauthlib==3.1.0

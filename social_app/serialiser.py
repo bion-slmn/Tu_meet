@@ -33,3 +33,8 @@ class CommentSerialiser(BaseSerialiser):
     class Meta:
         model = Comment
         fields = ['id', 'content', 'user']
+
+class InputSerializer(serializers.Serializer):
+        code = serializers.CharField(required=False)
+        error = serializers.CharField(required=False)
+        state = serializers.CharField(required=False)

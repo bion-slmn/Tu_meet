@@ -70,6 +70,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'tu_meet.wsgi.application'
+BASE_BACKEND_URL = 'http://localhost:8000/' 
 
 
 # Database

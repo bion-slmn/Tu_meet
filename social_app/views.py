@@ -5,12 +5,17 @@ from .decorator import class_exception_handler
 from .models import Post, Comment, Like
 from rest_framework.generics import ListAPIView
 from .serialiser import (
-    PostSerialiser, CommentSerialiser)
+    PostSerialiser, CommentSerialiser, InputSerializer)
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from django.db.models import Count
 from django.contrib.auth.models import User
-
+from .google_login_flow import GoogleRawLoginFlowService
+from rest_framework import serializers, status
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+import os
+from django.shortcuts import redirect
 
 class PostView(ListAPIView):
     """
@@ -209,3 +214,89 @@ class ProfileView(APIView):
             },
             status=status.HTTP_200_OK
         )
+    
+class PublicApi(APIView):
+    """
+    An API view that allows public access without
+    requiring authentication or permissions.
+    """
+    authentication_classes = ()
+    permission_classes = ()
+
+
+class GoogleLoginRedirectApi(PublicApi):
+    def get(self, request, *args, **kwargs):
+        """
+        Handle GET requests to initiate the Google OAuth2 login flow.
+
+        Args:
+            request (HttpRequest): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            HttpResponseRedirect: Redirects to the Google OAuth2 
+            authorization URL.
+        """
+        google_login_flow = GoogleRawLoginFlowService()
+
+        authorization_url, state = google_login_flow.get_authorization_url()
+
+        request.session["google_oauth2_state"] = state
+        return redirect(authorization_url)
+    
+class GoogleLoginApi(PublicApi):
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handle GET requests to process Google OAuth2 login callback.
+
+        Args:
+            request (HttpRequest): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: JSON response containing user information after successful login.
+        """
+        input_serializer = InputSerializer(data=request.GET)
+        input_serializer.is_valid(raise_exception=True)
+
+        validated_data = input_serializer.validated_data
+
+        code = validated_data.get("code")
+        error = validated_data.get("error")
+        state = validated_data.get("state")
+
+        if error is not None:
+            return Response(
+                {"error": error},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if code is None or state is None:
+            return Response(
+                {"error": "Code and state are required."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+        google_login_flow = GoogleRawLoginFlowService()
+        google_tokens = google_login_flow.get_tokens(code=code)
+        
+        id_token_decoded = google_tokens.decode_id_token(
+            client_id=os.getenv('GOOGLE_OAUTH2_CLIENT_ID'))
+        user_info = google_login_flow.get_user_info(google_tokens=google_tokens)
+        
+        user_email = id_token_decoded["email"]
+        user_name = id_token_decoded["name"]
+        user, _ = User.objects.get_or_create(email=user_email, username=user_name)
+
+        login(request, user)
+
+        result = {
+            "id_token_decoded": id_token_decoded,
+            "user_info": user_info,
+        }
+
+        return Response(result)
