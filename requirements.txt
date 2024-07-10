@@ -11,4 +11,4 @@ requests-unixsocket==0.2.0
 typing-extensions==4.7.0
 urllib3==1.25.8
 oauthlib==3.1.0
-python-dotenv==1.0.0
+python-dotenv==0.21.1
