@@ -3,7 +3,7 @@ django-rq==2.10.2
 djangorestframework==3.14.0
 psycopg2-binary==2.9.9
 pillow==9.5.0
-daphne==4.1.2
+daphne==4.0.0
 djangorestframework-simplejwt==5.3.1
 attrs==23.2.0
 requests==2.22.0
