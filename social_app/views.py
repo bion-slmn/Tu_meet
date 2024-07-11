@@ -285,6 +285,7 @@ class GoogleLoginApi(PublicApi):
         
         id_token_decoded = google_tokens.decode_id_token(
             client_id=os.getenv('GOOGLE_OAUTH2_CLIENT_ID'))
+        
         #user_info = google_login_flow.get_user_info(google_tokens=google_tokens)
         
         user_email = id_token_decoded.get("email")

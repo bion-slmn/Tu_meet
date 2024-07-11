@@ -483,10 +483,11 @@ class GoogleLoginApiTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
     
+    @patch('social_app.views.os.getenv')
     @patch('social_app.google_login_flow.GoogleRawLoginFlowService.get_tokens')
     @patch('social_app.views.generate_tokens_for_user')
-    def test_google_login_success(self, mock_generate_tokens, mockGetTokens):
-        
+    def test_google_login_success(self, mock_generate_tokens, mockGetTokens, mockosgetenv):
+        mockosgetenv.return_value = True 
         googleacesstoken = MagicMock()
         mock_generate_tokens.return_value = {'access_token': '12312', 'refresh_token': 'qqqqq'}
         mockGetTokens.return_value = googleacesstoken
@@ -496,6 +497,9 @@ class GoogleLoginApiTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         mock_generate_tokens.assert_called_once()
+        mockGetTokens.assert_called_once()
+        googleacesstoken.decode_id_token.assert_called_once()
+        mockosgetenv.assert_called()
         mockGetTokens.assert_called_with(code='refresh_token')
         self.assertEqual(response.data['user'], 'test@example.com')
         self.assertEqual(response.data['access_token'], 'access_token' )
