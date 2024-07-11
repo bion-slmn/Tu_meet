@@ -1,6 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
-from social_app.models import Post, Like, Comment, User
+from social_app.models import (
+    Post, Like, Comment, User)
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
@@ -8,6 +9,7 @@ from PIL import Image
 import tempfile, unittest
 from django.test import TestCase
 from django.test import override_settings
+from unittest.mock import patch, MagicMock
 
 
 def get_temporary_image():
@@ -445,3 +447,56 @@ class ProfileViewTestUpdates(APITestCase):
         updated_data = {}
         response = self.client.put(self.url, updated_data, format='json')
         self.assertEqual(response.status_code, 200)
+
+class GoogleLoginRedirectApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+    @patch('social_app.google_login_flow.GoogleRawLoginFlowService.get_authorization_url')
+    def test_google_login_redirect(self, Mockget_authorization_url):
+        
+        Mockget_authorization_url.return_value = ('http://example.com/auth', 'test_state')
+
+        # Create a request object
+        response = self.client.get(reverse('google-oauth2-login-raw-redirect')) 
+
+        # Assertions
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://example.com/auth')
+        Mockget_authorization_url.assert_called_once()
+
+class GoogleLoginApiTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_google_login_missing_with_error(self):
+        response = self.client.get(reverse('google_auth2'), {
+            'code': 'valid_code', 'state': 'valid_state', 'error': 12})
+        self.assertEqual(response.status_code, 400)
+
+    def test_google_login_missing_code(self):
+        response = self.client.get(reverse('google_auth2'), {'state': 'valid_state'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_google_login_missing_state(self):
+        response = self.client.get(reverse('google_auth2'), {
+            'code': 'valid_code'})
+        self.assertEqual(response.status_code, 400)
+
+    
+    @patch('social_app.google_login_flow.GoogleRawLoginFlowService.get_tokens')
+    @patch('social_app.views.generate_tokens_for_user')
+    def test_google_login_success(self, mock_generate_tokens, mockGetTokens):
+        
+        googleacesstoken = MagicMock()
+        mock_generate_tokens.return_value = {'access_token': '12312', 'refresh_token': 'qqqqq'}
+        mockGetTokens.return_value = googleacesstoken
+        googleacesstoken.decode_id_token.return_value = {'email': 'test@example.com', 'name': 'Test User', }
+
+        response = self.client.get(reverse('google_auth2'), {'code': 'refresh_token', 'state': 'valid_state'})
+
+        self.assertEqual(response.status_code, 200)
+        mock_generate_tokens.assert_called_once()
+        mockGetTokens.assert_called_with(code='refresh_token')
+        self.assertEqual(response.data['user'], 'test@example.com')
+        self.assertEqual(response.data['access_token'], 'access_token' )
+        self.assertEqual(response.data['refresh_token'], 'refresh_token')

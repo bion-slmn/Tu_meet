@@ -287,8 +287,8 @@ class GoogleLoginApi(PublicApi):
             client_id=os.getenv('GOOGLE_OAUTH2_CLIENT_ID'))
         #user_info = google_login_flow.get_user_info(google_tokens=google_tokens)
         
-        user_email = id_token_decoded["email"]
-        user_name = id_token_decoded["name"]
+        user_email = id_token_decoded.get("email")
+        user_name = id_token_decoded.get("name")
         user, _ = User.objects.get_or_create(email=user_email, username=user_name)
         
         try:
