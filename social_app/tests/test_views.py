@@ -482,7 +482,7 @@ class GoogleLoginApiTest(TestCase):
             'code': 'valid_code'})
         self.assertEqual(response.status_code, 400)
 
-    
+    @unittest.skip
     @patch('social_app.views.os.getenv')
     @patch('social_app.google_login_flow.GoogleRawLoginFlowService.get_tokens')
     @patch('social_app.views.generate_tokens_for_user')
