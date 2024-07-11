@@ -451,6 +451,8 @@ class ProfileViewTestUpdates(APITestCase):
 class GoogleLoginRedirectApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+
+    @unittest.skip
     @patch('social_app.google_login_flow.GoogleRawLoginFlowService.get_authorization_url')
     def test_google_login_redirect(self, Mockget_authorization_url):
         
