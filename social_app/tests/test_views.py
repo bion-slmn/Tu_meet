@@ -1,13 +1,11 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
-from django.contrib.auth.models import User
-from social_app.models import Post, Like, Comment, Profile
+from social_app.models import Post, Like, Comment, User
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
-import os
 from PIL import Image
-import tempfile
+import tempfile, unittest
 from django.test import TestCase
 from django.test import override_settings
 
@@ -20,11 +18,12 @@ def get_temporary_image():
     return tmp_file
 
 
+
 class PostViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
-            username='testuser', password='12345')
+            username='testuser', password='12345', email='bion@gmail.com')
         image_file = SimpleUploadedFile(
             "sample.jpg",
             b"file_content",
@@ -39,6 +38,8 @@ class PostViewTest(TestCase):
         self.comment = Comment.objects.create(
             content="Great post!", post=self.post1, user=self.user)
         self.response = self.client.get(reverse('all_posts'))
+    def teardown(self):
+        self.user.delete()
 
     def test_status_code(self):
         self.assertEqual(self.response.status_code, 200)
@@ -120,7 +121,7 @@ class PostDetailsTestCase(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='testuser', password='testpass')
+            username='testuser', password='testpass', email='bion@gmail.com')
         self.post = Post.objects.create(content="Test content", user=self.user)
         self.url = reverse('view_a_post', kwargs={'post_id': self.post.id})
         self.client.login(username='testuser', password='testpass')
@@ -159,14 +160,17 @@ class PostDetailsTestCase(APITestCase):
         self.assertIsNotNone(response.data['user']['id'])
 
 
+
 class CreatePostTestCase(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='john', password='password123')
+            username='john', password='password123', email='bion@gmail.com')
         self.client.login(username='john', password='password123')
         # Update this with the correct URL name
         self.url = reverse('create_post')
+    def teardown(self):
+        User.objects.all().delete()
 
     def test_create_post(self):
         data = {
@@ -222,9 +226,9 @@ class ViewCommentsTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user_john = User.objects.create_user(
-            username='john', password='12345')
+            username='john', password='12345', email='john@gmail.com')
         self.user_bion = User.objects.create_user(
-            username='bion', password='67890')
+            username='bion', password='67890', email='bion@gmail.com')
         self.post = Post.objects.create(
             content="Test content", user=self.user_bion)
 
@@ -234,6 +238,9 @@ class ViewCommentsTest(TestCase):
             content="then this is my first comment",
             user=self.user_bion,
             post=self.post)
+        
+    def teardown(self):
+        User.objects.all().delete()
 
 
 
@@ -283,7 +290,7 @@ class CreateCommentTestCase(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='john', password='password123')
+            username='john', password='password123', email='b@gmail.com')
         self.client.login(username='john', password='password123')
         self.post = Post.objects.create(user=self.user, content='Test post')
         self.url = reverse('create_comment', args=[self.post.id])
@@ -294,7 +301,6 @@ class CreateCommentTestCase(APITestCase):
         }
 
         response = self.client.post(self.url, data, format='json')
-
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['content'], data['content'])
         self.assertEqual(response.data['user']['username'], self.user.username)
@@ -325,7 +331,7 @@ class LikesViewTestCase(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='john', password='password123')
+            username='john', password='password123', email='b@gmail.com')
         self.client.login(username='john', password='password123')
         self.post = Post.objects.create(user=self.user, content='Test post')
         # Assuming the URL name is 'like-post'

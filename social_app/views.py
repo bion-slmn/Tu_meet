@@ -2,20 +2,19 @@ from django.http import HttpRequest
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .decorator import class_exception_handler
-from .models import Post, Comment, Like
+from .models import Post, Comment, Like, User
 from rest_framework.generics import ListAPIView
 from .serialiser import (
     PostSerialiser, CommentSerialiser, InputSerializer)
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from django.db.models import Count
-from django.contrib.auth.models import User
-from .google_login_flow import GoogleRawLoginFlowService
-from rest_framework import serializers, status
-from django.contrib.auth.models import User
-from django.contrib.auth import login
+from .google_login_flow import GoogleRawLoginFlowService, generate_tokens_for_user
+from rest_framework import  status
 import os
 from django.shortcuts import redirect
+
+
 
 class PostView(ListAPIView):
     """
@@ -111,7 +110,7 @@ class CommentView(APIView):
         if serialiser.is_valid():
             serialiser.save(post=post, user=request.user)
             return Response(serialiser.data, status=status.HTTP_201_CREATED)
-        return Response(serialiser.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response('here', status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request: HttpRequest, comment_id: str) -> Response:
         """
@@ -286,17 +285,34 @@ class GoogleLoginApi(PublicApi):
         
         id_token_decoded = google_tokens.decode_id_token(
             client_id=os.getenv('GOOGLE_OAUTH2_CLIENT_ID'))
-        user_info = google_login_flow.get_user_info(google_tokens=google_tokens)
+        #user_info = google_login_flow.get_user_info(google_tokens=google_tokens)
         
         user_email = id_token_decoded["email"]
         user_name = id_token_decoded["name"]
         user, _ = User.objects.get_or_create(email=user_email, username=user_name)
+        
+        try:
+            user = User.objects.get(email=user_email)
+            
+        except User.DoesNotExist:
+            username = user_email.split('@')[0]
+            first_name = id_token_decoded.get('given_name', '')
+            last_name = id_token_decoded.get('family_name', '')
 
-        login(request, user)
-
-        result = {
-            "id_token_decoded": id_token_decoded,
-            "user_info": user_info,
-        }
-
-        return Response(result)
+            user = User.objects.create(
+                username=username,
+                email=user_email,
+                first_name=first_name,
+                last_name=last_name,
+                registration_method='google',
+                phone_no=None,
+                referral=None
+            )
+        finally:
+            access_token, refresh_token = generate_tokens_for_user(user)
+            response_data = {
+                'user': user_email,
+                'access_token': str(access_token),
+                'refresh_token': str(refresh_token)
+            }
+            return Response(response_data)

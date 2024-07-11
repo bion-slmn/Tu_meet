@@ -11,6 +11,8 @@ from oauthlib.common import UNICODE_ASCII_CHARACTER_SET
 import requests
 import jwt
 from typing import Dict, Any
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 
 load_dotenv()
 
@@ -228,3 +230,11 @@ class GoogleRawLoginFlowService:
 
         return response.json()
 
+def generate_tokens_for_user(user):
+    """
+    Generate access and refresh tokens for the given user
+    """
+    serializer = TokenObtainPairSerializer()
+    token_data = serializer.get_token(user)
+    refresh_token = token_data
+    return refresh_token.access_token, refresh_token
