@@ -10,6 +10,7 @@ import tempfile, unittest
 from django.test import TestCase
 from django.test import override_settings
 from unittest.mock import patch, MagicMock
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 def get_temporary_image():
@@ -26,6 +27,8 @@ class PostViewTest(TestCase):
         self.client = APIClient()
         self.user = User.objects.create_user(
             username='testuser', password='12345', email='bion@gmail.com')
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         image_file = SimpleUploadedFile(
             "sample.jpg",
             b"file_content",
@@ -126,7 +129,10 @@ class PostDetailsTestCase(APITestCase):
             username='testuser', password='testpass', email='bion@gmail.com')
         self.post = Post.objects.create(content="Test content", user=self.user)
         self.url = reverse('view_a_post', kwargs={'post_id': self.post.id})
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.client.login(username='testuser', password='testpass')
+        
 
     def tearDown(self):
         # Clean up after each test
@@ -168,6 +174,8 @@ class CreatePostTestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='john', password='password123', email='bion@gmail.com')
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.client.login(username='john', password='password123')
         # Update this with the correct URL name
         self.url = reverse('create_post')
@@ -240,6 +248,8 @@ class ViewCommentsTest(TestCase):
             content="then this is my first comment",
             user=self.user_bion,
             post=self.post)
+        refresh = RefreshToken.for_user(self.user_bion)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         
     def teardown(self):
         User.objects.all().delete()
@@ -293,6 +303,8 @@ class CreateCommentTestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='john', password='password123', email='b@gmail.com')
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.client.login(username='john', password='password123')
         self.post = Post.objects.create(user=self.user, content='Test post')
         self.url = reverse('create_comment', args=[self.post.id])
@@ -334,6 +346,8 @@ class LikesViewTestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='john', password='password123', email='b@gmail.com')
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.client.login(username='john', password='password123')
         self.post = Post.objects.create(user=self.user, content='Test post')
         # Assuming the URL name is 'like-post'
@@ -379,6 +393,8 @@ class ProfileViewTest(APITestCase):
         self.client = APIClient()
         self.user = User.objects.create_user(
             username='john2', password='12345', email='bion25@gmail.com')
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.url = reverse('view_profile', kwargs={'user_id': self.user.id})
 
     def test_get_profile(self):
@@ -403,6 +419,8 @@ class ProfileViewTestUpdates(APITestCase):
             username='testuser',
             password='12345',
             email='testuser@example.com')
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.url = reverse('edit_profile', kwargs={'user_id': self.user.id})
 
     def test_put_update_bio(self):
