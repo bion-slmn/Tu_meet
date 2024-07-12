@@ -11,6 +11,7 @@ class User(AbstractUser):
         registration_method (str): The method used for user registration.
     """
     email = models.CharField(max_length=250, unique=True)
+    channel_name = models.CharField(max_length=100, blank=True, null=True)
     REGISTRATION_CHOICES = [
         ('email', 'Email'),
         ('google', 'Google'),
@@ -85,10 +86,26 @@ class Profile(models.Model):
         str: The username of the associated User.
     """
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_pic = models.ImageField(
         upload_to='profile_pics/', null=True, blank=True)
     bio = models.TextField(null=True)
 
     def __str__(self):
         return self.user.username
+
+
+class Notification(BaseModel):
+    """
+    A model to represent notifications for users.
+    Args:
+        User:  whow is the person who created the notification
+        created_for: id of user for whom the notification is created for,
+        message: The content of the notification.
+    """
+    created_for = models.CharField(max_length=60)
+    message = models.TextField()
+    read = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.message

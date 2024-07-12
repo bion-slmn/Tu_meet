@@ -1,7 +1,7 @@
 from django.test import TestCase
 from social_app.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from social_app.models import Post, Comment, Like, Profile
+from social_app.models import Post, Comment, Like, Profile, Notification
 from django.db.utils import IntegrityError
 from django.db.transaction import TransactionManagementError
 import uuid
@@ -161,3 +161,36 @@ class ProfileModelTest(TestCase):
 
         self.assertEqual(self.user.profile.profile_pic, profile_pic_path)
         self.assertEqual(self.user.profile.bio, bio_text)
+
+
+class NotificationModelTest(TestCase):
+    
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+    
+    def test_notification_creation(self):
+        notification = Notification.objects.create(
+            user=self.user,
+            created_for=self.user.id,
+            message='This is a test notification'
+        )
+        self.assertEqual(notification.created_for, self.user.id)
+        self.assertEqual(notification.message, 'This is a test notification')
+    
+    def test_string_representation(self):
+        notification = Notification.objects.create(
+            user=self.user,
+            created_for=self.user.id,
+            message='This is another test notification'
+        )
+        # Check the string representation of the notification
+        self.assertEqual(str(notification), notification.message)
+    
+    def test_notification_without_message(self):
+        with self.assertRaises(IntegrityError):
+            Notification.objects.create(
+                user=self.user,
+                created_for=self.user.username,
+                message=None
+            )
+
