@@ -13,4 +13,4 @@ urllib3==1.25.8
 oauthlib==3.1.0
 python-dotenv==0.21.1
 channels==4.0.0
-channels-redis==4.2.0
+channels-redis==4.0.0
