@@ -129,6 +129,20 @@ def created_comment(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def send_unread_notification(sender, instance, created, **kwargs):
+    """
+    Sends unread notifications to a user's channel when a 
+    new User instance is created.
+
+    Args:
+        sender: The sender of the signal.
+        instance: The User instance that triggered the signal.
+        created: A boolean indicating if the instance was created.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        None
+    """
+
     if created and instance.channel_name:
         notifications = Notification.objects.filter(
             created_for=instance.id, read=False)
