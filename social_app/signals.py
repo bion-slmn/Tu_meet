@@ -85,12 +85,18 @@ def created_comment(sender, instance, created, **kwargs):
         None
     """
 
-    if created:
-        notifications = create_notification(instance, 'commented on your post')
-        channel_name = User.objects.filter(id=notifications.created_for).channel_name
-        if channel_name:
-            send_notification(notifications, channel_name)
+    if not created:
+        return
 
+    notifications = create_notification(instance, 'commented on your post')
+    if not notifications:
+        return
+
+    user = User.objects.filter(id=int(notifications.created_for)).first()
+    if not user or not user.channel_name:
+        return
+
+    send_notification(notifications, user.channel_name)
         
 
 @receiver(post_save, sender=Like)
@@ -107,12 +113,18 @@ def created_comment(sender, instance, created, **kwargs):
     Returns:
         None
     """
-    if created:
-        notifications = create_notification(instance, 'liked your post')
-        channel_name = User.objects.filter(id=notifications.created_for).channel_name
-        if channel_name:
-            send_notification(notifications, channel_name)
+    if not created:
+        return
 
+    notifications = create_notification(instance, 'liked your post')
+    if not notifications:
+        return
+
+    user = User.objects.filter(id=int(notifications.created_for)).first()
+    if not user or not user.channel_name:
+        return
+
+    send_notification(notifications, user.channel_name)
 
 
 @receiver(post_save, sender=User)
